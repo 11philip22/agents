@@ -14,77 +14,93 @@ When invoked:
 ## Review Priorities
 
 ### CRITICAL — Security
-- **Command injection**: Unvalidated input in `subprocess`, `os.system`, or shell commands
-- **SQL injection**: String interpolation in SQL — use parameterized queries
-- **Path traversal**: User-controlled paths without validation or sandboxing
-- **Unsafe deserialization**: `pickle`, unsafe YAML loaders, arbitrary object loading
-- **Hardcoded secrets**: API keys, tokens, passwords in source
-- **SSRF**: User-controlled URLs used in requests without allowlists
-- **Weak crypto**: MD5/SHA1 for security, hardcoded keys, insecure randomness
+- **Unsafe deserialization**: `pickle`, `yaml.load` (use `safe_load`), arbitrary object loading
+- **Hardcoded secrets**: API keys, tokens, passwords, connection strings in source
+- **Weak crypto**: MD5/SHA1 for security purposes, hardcoded keys, `random` instead of `secrets`
+- **PII/credential logging**: Sensitive data (tokens, passwords, personal info) passed to loggers
 
 ### CRITICAL — Correctness
-- **Bare `except` / swallowed errors**: Hiding failures without logging or handling
-- **Mutable default arguments**: `[]`, `{}`, or objects as default params
-- **Resource leaks**: Files, sockets, DB connections not managed with context managers
-- **Race-prone file operations**: TOCTOU bugs, unsafe temp files
-- **Incorrect async usage**: Blocking I/O inside async functions
-- **Data loss**: Destructive writes/deletes without validation or backup path
+- **Bare `except` / swallowed errors**: Catching all exceptions without logging or re-raising
+- **Mutable default arguments**: `def f(x=[])` or `def f(x={})` — use `None` sentinel instead
+- **Resource leaks**: Files, sockets, DB connections not managed with `with` / context managers
+- **Race-prone file operations**: TOCTOU bugs (check-then-act), unsafe temp files (use `tempfile`)
+- **Blocking I/O inside async functions**: `time.sleep`, sync HTTP, sync DB, sync file I/O in `async def`
 
 ### HIGH — Typing and API Design
-- **Missing types on public APIs**: Functions/classes exposed without annotations
-- **Incorrect Optional handling**: Possible `None` dereference
-- **Overly broad types**: `Any`, `dict`, `list` where precise types are expected
-- **Boolean flag arguments**: Prefer clearer APIs or separate functions
-- **Inconsistent return types**: Functions returning mixed shapes or sentinel values
+- **Missing types on public APIs**: All public functions and classes must have annotations
+- **Incorrect Optional handling**: Possible `None` dereference without guard
+- **Overly broad types**: `Any`, unparameterized `dict` / `list` where precise types are expected
+- **Boolean flag arguments**: `def process(fast=True)` — prefer separate functions or an enum
+- **Inconsistent return types**: Functions returning mixed shapes or `None` as a sentinel
+- **Uncontrolled public surface**: Missing `__all__` on modules intended as libraries
 
 ### HIGH — Concurrency and Async
-- **Blocking calls in async code**: `time.sleep`, sync HTTP, sync DB, file I/O
-- **Unbounded concurrency**: Missing semaphore/backpressure
-- **Shared mutable state**: Unsynchronized writes across threads/tasks
-- **Forgotten awaits**: Coroutine created but not awaited
-- **Task leaks**: Background tasks without lifecycle or cancellation handling
+- **Blocking calls in async code**: Any sync I/O inside `async def` without `run_in_executor`
+- **Unbounded concurrency**: `asyncio.gather(*many_tasks)` without a `Semaphore` or rate limit
+- **Shared mutable state**: Unsynchronized writes across threads or tasks
+- **Forgotten awaits**: Coroutine created but not awaited (often silent bug)
+- **Task leaks**: Background tasks created without lifecycle tracking or cancellation handling
+- **`asyncio.run()` misuse**: Calling it inside an already-running event loop; mixing loop strategies
 
 ### HIGH — Code Quality
-- **Large functions**: Over 50 lines
-- **Deep nesting**: More than 4 levels
-- **Duplicated logic**: Copy/paste instead of shared helper
-- **Global mutable state**: Hidden coupling and test fragility
-- **Import side effects**: Work performed at import time
-- **Circular imports**: Fragile module dependencies
+- **Large functions**: Over 50 lines — extract into named helpers
+- **Deep nesting**: More than 4 levels — invert conditions, extract, or use early returns
+- **Duplicated logic**: Copy/paste instead of a shared helper
+- **Global mutable state**: Module-level mutables causing hidden coupling and test fragility
+- **Import side effects**: Network calls, file I/O, or heavy computation at import time
+- **Circular imports**: Fragile module dependencies — restructure or use TYPE_CHECKING guard
 
 ### MEDIUM — Performance
-- **N+1 queries**: Database calls inside loops
-- **Repeated expensive work**: Regex compilation, parsing, network calls in loops
-- **Unnecessary materialization**: `list()` when iterator is enough
-- **Inefficient string building**: Concatenation in loops instead of `join`
-- **Missing batching/pagination**: Large data processed all at once
-- **Excessive copying**: `copy.deepcopy` or repeated dict/list copies without need
+- **N+1 queries**: Database calls inside loops — batch or use joins
+- **Repeated expensive work in loops**: Regex compilation, parsing, or network calls — hoist out
+- **Unnecessary materialization**: `list(gen)` when an iterator suffices
+- **Inefficient string building**: Concatenation in loops — use `"".join()`
+- **Missing batching/pagination**: Large datasets processed entirely in memory
+- **Excessive copying**: Unnecessary `copy.deepcopy` or repeated dict/list copies
 
 ### MEDIUM — Testing
-- **Missing tests for changed behavior**
-- **Only happy-path tests**
-- **No edge cases**: Empty inputs, `None`, invalid data, large inputs
-- **Flaky tests**: Real time, network, random, filesystem assumptions
-- **Over-mocking**: Tests assert implementation instead of behavior
+- **Missing tests for changed behaviour**: Every modified code path needs a test
+- **Only happy-path tests**: Add failure cases, edge inputs, and boundary values
+- **No edge cases**: Empty inputs, `None`, invalid types, maximum sizes
+- **Flaky tests**: Dependencies on real time, network, randomness, or filesystem
+- **Over-mocking**: Tests asserting implementation details instead of observable behaviour
+- **Coverage regression**: Note if the diff reduces overall test coverage
 
 ### MEDIUM — Best Practices
-- **Non-idiomatic Python**: Manual loops where comprehensions or stdlib are clearer
-- **Poor logging**: `print`, missing context, logging secrets
-- **Config hardcoded in code**: Use environment/config files
-- **Missing docstrings**: Public APIs or complex logic undocumented
-- **Lint suppressions**: `# noqa`, `type: ignore` without justification
+- **Non-idiomatic Python**: Manual loops where comprehensions or stdlib (`itertools`, `functools`) are clearer
+- **Poor logging**: `print` statements, missing context, logging raw exceptions without `exc_info=True`
+- **Config hardcoded in source**: Use environment variables or config files; validate with `pydantic-settings` or similar
+- **Missing docstrings**: All public APIs and complex logic must be documented
+- **Unjustified lint suppressions**: `# noqa`, `# type: ignore` without an explanatory comment
+- **Exception chaining**: `raise NewError(...)` without `from e` loses the original traceback
+
+### LOW — Dependency and Project Health
+- **Dependency hygiene**: New packages added without pinning; no entry in `pyproject.toml` / `requirements.txt`
+- **Unpinned transitive dependencies**: Missing `requirements.lock` or equivalent for deployable services
+- **Unused imports**: Clean up with `ruff`
+- **Dead code**: Unreachable branches, unused variables, commented-out blocks
+
+---
 
 ## Diagnostic Commands
 
+Run these in order. If a tool is not installed, emit a warning rather than silently skipping.
+
 ```bash
+# Required
 git diff -- '*.py'
-ruff check .
-ruff format --check .
-mypy .
-pytest
-bandit -r . || true
-pip-audit || true
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy .
+
+# Recommended (warn if missing, do not fail silently)
+command -v pytest  && pytest --tb=short -x -q || echo "WARNING: pytest not found"
+command -v pip-audit && pip-audit         || echo "WARNING: pip-audit not found — skipping dependency audit"
 ```
+
+> **Note:** `pip-audit` must be installed explicitly. Do not use `|| true` — a missing tool is worth surfacing.
+
+---
 
 ## Approval Criteria
 
