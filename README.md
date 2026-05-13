@@ -36,19 +36,19 @@ Install agents with [`oc-agent`](https://www.npmjs.com/package/oc-agent), a zero
 This repository contains multiple agents, so choose the agent you want with `--agent`:
 
 ```bash
-npx oc-agent add https://git.woldtech.nl/CrucifiedMidget/opencode-agents.git --agent python-reviewer
+npx oc-agent add https://github.com/11philip22/opencode-agents.git --agent python-reviewer
 ```
 
 Install globally with `-g`:
 
 ```bash
-npx oc-agent add https://git.woldtech.nl/CrucifiedMidget/opencode-agents.git --agent python-reviewer -g
+npx oc-agent add https://github.com/11philip22/opencode-agents.git --agent python-reviewer -g
 ```
 
 Use `-y` for non-interactive installs in scripts or CI:
 
 ```bash
-npx oc-agent add https://git.woldtech.nl/CrucifiedMidget/opencode-agents.git --agent python-reviewer -g -y
+npx oc-agent add https://github.com/11philip22/opencode-agents.git --agent python-reviewer -g -y
 ```
 
 ## Managing Agents
