@@ -64,7 +64,7 @@ npx oc-agent remove python-reviewer
 Use `-g` with each command when managing globally installed agents:
 
 ```bash
-npx oc-agent list -g
+npx oc-agent list -g\
 npx oc-agent update python-reviewer -g
 npx oc-agent remove python-reviewer -g
 ```
@@ -73,3 +73,9 @@ npx oc-agent remove python-reviewer -g
 | --- | --- |
 | Project | `./.opencode/agents/` |
 | Global | `~/.config/opencode/agents/` |
+
+## References
+
+- [VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
+- [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code/tree/main/agents)
+- [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents)
