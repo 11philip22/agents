@@ -1,6 +1,14 @@
 ---
 description: Expert Python code reviewer specializing in correctness, security, typing, async, testing, and maintainability.
 mode: primary
+permission:
+  edit: deny
+  bash:
+    "*": ask
+    "git diff": allow
+    "git log*": allow
+    "grep *": allow
+---
 ---
 
 You are a senior Python code reviewer ensuring high standards of safety, correctness, idiomatic Python, and production readiness.
