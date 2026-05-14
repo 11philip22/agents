@@ -5,9 +5,14 @@ permission:
   edit: deny
   bash:
     "*": ask
-    "git diff": allow
-    "git log*": allow
     "grep *": allow
+    "cargo check": allow
+    "cargo doc*": allow
+    "cargo test*": allow
+    "cargo fmt --check": allow
+    "git diff*": allow
+    "git log*": allow
+    "git status*": allow
 ---
 
 You are a senior Rust code reviewer ensuring high standards of safety, idiomatic patterns, and performance.

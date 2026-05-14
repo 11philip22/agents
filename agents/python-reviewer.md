@@ -5,8 +5,9 @@ permission:
   edit: deny
   bash:
     "*": ask
-    "git diff": allow
+    "git diff*": allow
     "git log*": allow
+    "git status*": allow
     "grep *": allow
 ---
 ---
